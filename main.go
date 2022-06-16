@@ -15,6 +15,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
+const yazNode = "http://178.62.17.228:26658"
 const bridgeNode = "http://35.208.160.145:26658"
 const fullNode = "http://146.148.83.114:26658"
 
@@ -22,8 +23,7 @@ type DataAvailabilityLayerClient struct {
 	client *cnc.Client
 
 	namespaceID [8]byte
-	// config      Config
-	logger log.Logger
+	logger      log.Logger
 }
 
 func main() {
@@ -55,6 +55,15 @@ func main() {
 		[8]byte{0, 1, 2, 3, 4, 5, 6, 8},
 		log.NewTMLogger(os.Stdout),
 	}
+	yazClient, err := cnc.NewClient(yazNode)
+	if err != nil {
+		panic("failed to setup yazNode cnc client")
+	}
+	yazDAClient := DataAvailabilityLayerClient{
+		yazClient,
+		[8]byte{0, 1, 2, 3, 4, 5, 6, 8},
+		log.NewTMLogger(os.Stdout),
+	}
 	for i := startHeight; i <= endHeight; i++ {
 		bridgeBlocks := bridgeDAClient.RetrieveBlocks(uint64(i))
 		for _, block := range bridgeBlocks.Blocks {
@@ -62,7 +71,11 @@ func main() {
 		}
 		fullBlocks := fullDAClient.RetrieveBlocks(uint64(i))
 		for _, block := range fullBlocks.Blocks {
-			fmt.Printf("fullHeight: %v\n", block.Header.Height)
+			fmt.Printf("fullHeight: %v, ", block.Header.Height)
+		}
+		yazBlocks := yazDAClient.RetrieveBlocks(uint64(i))
+		for _, block := range yazBlocks.Blocks {
+			fmt.Printf("yazHeight: %v\n", block.Header.Height)
 		}
 	}
 }
